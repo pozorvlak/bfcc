@@ -1,0 +1,41 @@
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+use 5.010;
+
+my %subs = (
+    ',' => '*h=getchar();',   # Read a character from stdin, 255 on EOF
+    '.' => 'putchar(*h);',    # Write a character to stdout
+    '-' => '--*h;',           # Decrement tape
+    '+' => '++*h;',           # Increment tape
+    '<' => '--h;',            # Move head left
+    '>' => '++h;',            # Move head right
+    '[' => 'while(*h) {',     # Start loop
+    ']' => '}',               # End loop
+);
+
+my $header = <<END_HEADER;
+#include <stdlib.h>
+
+int main() {
+    char* h;
+    h = calloc(10000, 1);
+END_HEADER
+
+my $footer = "\n}\n";
+
+foreach my $bf_file (@ARGV) {
+    open my $BF, "<", $bf_file;
+    open my $C, ">", $bf_file.".c";
+    print $C $header;
+    while (<$BF>) {
+        foreach my $char (split //, $_) {
+            if (exists($subs{$char})) {
+                say $C $subs{$char};
+            }
+        }
+    }
+    print $C $footer;
+    close $BF; close $C;
+}
