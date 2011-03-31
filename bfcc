@@ -20,7 +20,7 @@ my $header = <<END_HEADER;
 #include <stdlib.h>
 
 int main() {
-    char* h;
+    unsigned char* h;
     h = calloc(10000, 1);
 END_HEADER
 
