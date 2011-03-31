@@ -3,6 +3,7 @@
 use warnings;
 use strict;
 use 5.010;
+use File::Basename;
 
 my %subs = (
     ',' => '*h=getchar();',   # Read a character from stdin, 255 on EOF
@@ -27,7 +28,8 @@ my $footer = "\n}\n";
 
 foreach my $bf_file (@ARGV) {
     open my $BF, "<", $bf_file;
-    open my $C, ">", $bf_file.".c";
+    my $cfile = basename($bf_file, ".bf").".c";
+    open my $C, ">", $cfile;
     print $C $header;
     while (<$BF>) {
         foreach my $char (split //, $_) {
@@ -38,4 +40,5 @@ foreach my $bf_file (@ARGV) {
     }
     print $C $footer;
     close $BF; close $C;
+    system "gcc", $cfile;
 }
