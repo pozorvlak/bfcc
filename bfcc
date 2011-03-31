@@ -31,9 +31,9 @@ my $footer = <<END_FOOTER;
 END_FOOTER
 
 foreach my $bf_file (@ARGV) {
-    open my $BF, "<", $bf_file;
+    open my $BF, "<", $bf_file or die "Can't open $bf_file for reading: $!\n";
     my $cfile = basename($bf_file, ".bf").".c";
-    open my $C, ">", $cfile;
+    open my $C, ">", $cfile or die "Can't open $cfile for writing: $!\n";
     print $C $header;
     while (<$BF>) {
         no warnings qw<uninitialized>;
@@ -41,6 +41,7 @@ foreach my $bf_file (@ARGV) {
         print $C $_;
     }
     print $C $footer;
-    close $BF; close $C;
-    system "gcc", $cfile;
+    close $BF or die "Failed to read $bf_file: $!\n";
+    close $C or die "Failed to write $cfile: $!\n";
+    system("gcc", $cfile) == 0 or exit 1;
 }
