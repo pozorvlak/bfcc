@@ -1,0 +1,3 @@
+Trivial BrainF**k compiler. Goes via C. Blame Aaron for my releasing this.
+
+Copyright 2011 Miles Gould (except for hello.bf), available under the WTFPL.
