@@ -15,6 +15,7 @@ my %subs = (
     '[' => 'while(*h) {',     # Start loop
     ']' => '}',               # End loop
 );
+$_ .= "\n" for values %subs;
 
 my $header = <<END_HEADER;
 #include <stdlib.h>
@@ -35,11 +36,9 @@ foreach my $bf_file (@ARGV) {
     open my $C, ">", $cfile;
     print $C $header;
     while (<$BF>) {
-        foreach my $char (split //, $_) {
-            if (exists($subs{$char})) {
-                say $C $subs{$char};
-            }
-        }
+        no warnings qw<uninitialized>;
+        s/(.)/$subs{$1}/xmsg;
+        print $C $_;
     }
     print $C $footer;
     close $BF; close $C;
