@@ -24,7 +24,10 @@ int main() {
     h = calloc(10000, 1);
 END_HEADER
 
-my $footer = "\n}\n";
+my $footer = <<END_FOOTER;
+    return 0;
+}
+END_FOOTER
 
 foreach my $bf_file (@ARGV) {
     open my $BF, "<", $bf_file;
