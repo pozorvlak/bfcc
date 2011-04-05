@@ -5,6 +5,7 @@ use strict;
 use 5.010;
 use File::Basename;
 use File::Slurp qw<read_file write_file>;
+use List::Util qw<first>;
 
 my %subs = (
     ',' => '*h=getchar();',   # Read a character from stdin, 255 on EOF
@@ -21,6 +22,14 @@ my %subs = (
     '[->+<]' => 'h[1] += h[0]; *h = 0;',
 );
 $_ .= "\n" for values %subs;
+
+# Variable optimisations
+my @optim = (
+    ['\+\++', sub { '*h += '.length($+).'u;' }],
+    ['\-\-+', sub { '*h -= '.length($+).'u;' }],
+    ['\>\>+', sub {  'h += '.length($+).'u;' }],
+    ['\<\<+', sub {  'h -= '.length($+).'u;' }],
+);
 
 my $header = <<END_HEADER;
 #include <stdlib.h>
@@ -41,16 +50,20 @@ my $ignorable = do {
 };
 
 my $token = do {
-    my $alternations = join '|', map { quotemeta }
+    my $fixed = join '|', map { quotemeta }
         # Ensure longer alternations are tried first
         sort { length $b <=> length $a || $a cmp $b } keys %subs;
-    qr/($alternations)/;
+    my $optim = join '|', map { "($_->[0])" } @optim;
+    qr/$optim|($fixed)/;
 };
 
 foreach my $bf_file (@ARGV) {
     my $code = read_file($bf_file);
     $code =~ s/$ignorable//g;
-    $code =~ s/$token/$subs{$1}/g;
+    $code =~ s{$token}{
+        my $o = -1 + first { defined $+[$_] } 1 .. @+;
+        $o < @optim ? $optim[$o][1]->()."\n" : $subs{$+};
+    }peg;
 
     my $cfile = basename($bf_file, ".bf").".c";
     write_file($cfile, $header, $code, $footer);
