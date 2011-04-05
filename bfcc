@@ -4,6 +4,7 @@ use warnings;
 use strict;
 use 5.010;
 use File::Basename;
+use File::Slurp qw<read_file write_file>;
 
 my %subs = (
     ',' => '*h=getchar();',   # Read a character from stdin, 255 on EOF
@@ -31,17 +32,14 @@ my $footer = <<END_FOOTER;
 END_FOOTER
 
 foreach my $bf_file (@ARGV) {
-    open my $BF, "<", $bf_file or die "Can't open $bf_file for reading: $!\n";
-    my $cfile = basename($bf_file, ".bf").".c";
-    open my $C, ">", $cfile or die "Can't open $cfile for writing: $!\n";
-    print $C $header;
-    while (<$BF>) {
+    my $code = read_file($bf_file);
+    {
         no warnings qw<uninitialized>;
-        s/(.)/$subs{$1}/xmsg;
-        print $C $_;
+        $code =~ s/(.)/$subs{$1}/xmsg;
     }
-    print $C $footer;
-    close $BF or die "Failed to read $bf_file: $!\n";
-    close $C or die "Failed to write $cfile: $!\n";
+
+    my $cfile = basename($bf_file, ".bf").".c";
+    write_file($cfile, $header, $code, $footer);
+
     system("gcc", $cfile) == 0 or exit 1;
 }
