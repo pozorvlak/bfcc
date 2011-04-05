@@ -15,6 +15,10 @@ my %subs = (
     '>' => '++h;',            # Move head right
     '[' => 'while(*h) {',     # Start loop
     ']' => '}',               # End loop
+
+    # Fixed optimisations:
+    '[-]'    => '*h = 0;',
+    '[->+<]' => 'h[1] += h[0]; *h = 0;',
 );
 $_ .= "\n" for values %subs;
 
@@ -31,12 +35,22 @@ my $footer = <<END_FOOTER;
 }
 END_FOOTER
 
+my $ignorable = do {
+    my $chars = join '', map { "\\$_" } sort grep { length == 1 } keys %subs;
+    qr/[^$chars]+/;
+};
+
+my $token = do {
+    my $alternations = join '|', map { quotemeta }
+        # Ensure longer alternations are tried first
+        sort { length $b <=> length $a || $a cmp $b } keys %subs;
+    qr/($alternations)/;
+};
+
 foreach my $bf_file (@ARGV) {
     my $code = read_file($bf_file);
-    {
-        no warnings qw<uninitialized>;
-        $code =~ s/(.)/$subs{$1}/xmsg;
-    }
+    $code =~ s/$ignorable//g;
+    $code =~ s/$token/$subs{$1}/g;
 
     my $cfile = basename($bf_file, ".bf").".c";
     write_file($cfile, $header, $code, $footer);
